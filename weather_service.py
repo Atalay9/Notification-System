@@ -1,23 +1,34 @@
 import os
 import requests
 import logging
+import redis  # Yeni ekledik
+import json   # Veriyi metin olarak saklamak için
 
 # Logger kullanımı
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# API Key doğrudan yazılmıyor, Environment Variables'dan geliyor
+# API Key Environment Variables'dan geliyor
 API_KEY = os.getenv("WEATHER_API_KEY")
 BASE_URL = os.getenv("WEATHER_API_URL", "http://api.weatherapi.com/v1/current.json")
 CITY = "Adana"
 
+# Redis bağlantı bilgileri env'den geliyor
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+
+# Redis bağlantısının kurulumu
+try:
+    cache = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+    logger.info("Redis bağlantısı başarılı.")
+except Exception as e:
+    logger.error(f"Redis'e bağlanılamadı: {e}")
 
 def get_weather():
     if not API_KEY:
         logger.error("API_KEY bulunamadı!")
         return
 
-    # URL artık 'hardcoded' değil
     params = {
         "key": API_KEY,
         "q": CITY,
@@ -28,16 +39,21 @@ def get_weather():
     try:
         response = requests.get(BASE_URL, params=params)
         response.raise_for_status()
-
         data = response.json()
+
         temp = data['current']['temp_c']
         condition = data['current']['condition']['text']
-
-        # Print yerine Logger kullanıldı.
         logger.info(f"{CITY} hava durumu: {temp}°C, Gökyüzü: {condition}")
 
+        cache_key = f"weather:{CITY.lower()}"
+
+        cache.set(cache_key, json.dumps(data), ex=3600)
+        logger.info(f"==> Veri Redis'e '{cache_key}' anahtarıyla basıldı.")
+
     except requests.exceptions.RequestException as e:
-        logger.error(f"Hava durumu çekilirken bir hata oluştu: {e}")
+        logger.error(f"Dış servis (API) hatası: {e}")
+    except Exception as e:
+        logger.error(f"Redis işlemi sırasında hata: {e}")
 
 
 if __name__ == "__main__":
