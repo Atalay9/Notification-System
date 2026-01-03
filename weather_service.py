@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 # API Key Environment Variables'dan geliyor
 API_KEY = os.getenv("WEATHER_API_KEY")
-BASE_URL = os.getenv("WEATHER_API_URL", "http://api.weatherapi.com/v1/current.json")
+# current.json yerine forecast.json tercih edildi.
+BASE_URL = os.getenv("WEATHER_API_URL", "http://api.weatherapi.com/v1/forecast.json")
 CITY = "Adana"
 
 # Redis bağlantı bilgileri env'den geliyor
@@ -24,7 +25,7 @@ try:
 except Exception as e:
     logger.error(f"Redis'e bağlanılamadı: {e}")
 
-def get_weather():
+def get_hourly_weather():
     if not API_KEY:
         logger.error("API_KEY bulunamadı!")
         return
@@ -32,6 +33,7 @@ def get_weather():
     params = {
         "key": API_KEY,
         "q": CITY,
+        "days" : 1,
         "aqi": "no",
         "lang": "tr"
     }
@@ -41,13 +43,13 @@ def get_weather():
         response.raise_for_status()
         data = response.json()
 
-        temp = data['current']['temp_c']
-        condition = data['current']['condition']['text']
-        logger.info(f"{CITY} hava durumu: {temp}°C, Gökyüzü: {condition}")
+        hourly_data = data['forecast']['forecastday'][0]['hour']
+        current_temp = data['current']['temp_c']
+        logger.info(f"{CITY} anlık sıcaklık: {current_temp}°C. 24 saatlik veri işleniyor...")
 
         cache_key = f"weather:{CITY.lower()}"
 
-        cache.set(cache_key, json.dumps(data), ex=3600)
+        cache.set(cache_key, json.dumps(hourly_data), ex=3600)
         logger.info(f"==> Veri Redis'e '{cache_key}' anahtarıyla basıldı.")
 
     except requests.exceptions.RequestException as e:
@@ -57,4 +59,4 @@ def get_weather():
 
 
 if __name__ == "__main__":
-    get_weather()
+    get_hourly_weather()
