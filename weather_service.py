@@ -48,7 +48,7 @@ def get_hourly_weather():
             hourly_data = data['forecast']['forecastday'][0]['hour']
 
             cache_key = f"weather:hourly:{CITY.lower()}"
-            cache.st(cache_key, json.dumps(hourly_data), ex=SLEEP_INTERVAL + 300) #KASITLI SYNTAX HATASIgit
+            cache.set(cache_key, json.dumps(hourly_data), ex=SLEEP_INTERVAL + 300)
 
             logger.info(f"==> Redis güncellendi: {CITY} saatlik verileri tazelendi.")
             logger.info(f"Sistem {SLEEP_INTERVAL} saniye beklemeye geçiyor...")
