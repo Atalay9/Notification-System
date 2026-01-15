@@ -34,8 +34,7 @@ services:
   weather_alarm:
     build:
       context: .
-      dockerfile: Dockerfile.weather
-    command: python alarm_service.py
+      dockerfile: Dockerfile.alarm
     depends_on:
       - redis_db
     environment:

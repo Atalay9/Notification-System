@@ -25,7 +25,7 @@ def start_collector():
                 city = data['location']['name'].lower()
 
                 # Veriyi Redis'e kalıcı olarak yazıyoruz
-                r.set(f"weather:{city}", json.dumps(data))
+                r.set(f"weather:hourly:{city}", json.dumps(data))
 
                 logger.info(f"Collector: {city.capitalize()} verisi Redis'e başarıyla kaydedildi.")
             except Exception as e:
