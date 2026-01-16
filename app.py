@@ -2,7 +2,7 @@ import os
 import redis
 import json
 import logging
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 
 # .env yapılandırması
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # Redis bağlantı bilgileri
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_HOST = os.getenv("REDIS_HOST", "redis_db")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 
 # Redis bağlantısının kurulumu
@@ -38,6 +38,33 @@ def get_weather(city):
     else:
         logger.warning(f"Cache MISS: {city} verisi Redis'te bulunamadı.")  # Uyarı logu
         return jsonify({"status": "error", "message": "Veri bulunamadı."}), 404
+
+@app.route('/threshold', methods=['POST'])
+def set_threshold():
+    try:
+        # Kullanıcıdan veriyi alıyoruz
+        data = request.get_json()
+
+        if not data or 'value' not in data:
+            return jsonify({"status": "error", "message": "Lütfen 'value' içeren bir JSON gönderin."}), 400
+
+        threshold_value = data['value']
+
+        # Verinin sayı olduğundan emin oluyoruz
+        if not isinstance(threshold_value, (int, float)):
+            return jsonify({"status": "error", "message": "Değer bir sayı olmalıdır."}), 400
+
+        # Redis'e kaydediyoruz
+        cache.set("weather_threshold", threshold_value)
+
+        logger.info(f"Yeni threshold değeri ayarlandı: {threshold_value}")
+        return jsonify({
+            "status": "success",
+            "message": f"Threshold {threshold_value} olarak güncellendi."
+        }), 200
+    except Exception as e:
+        logger.error(f"Threshold kaydedilirken hata: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == '__main__':
