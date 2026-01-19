@@ -4,6 +4,7 @@ services:
   # 1. Veritabanı bloğu
   redis_db:
     image: redis:7-alpine
+    container_name: redis_db
     ports:
       - "6379:6379"
 
@@ -16,8 +17,6 @@ services:
       - redis_db
     env_file:
       - .env
-    environment:
-      - REDIS_HOST=redis_db
 
   # Collector bloğu
   weather_collector:
@@ -27,8 +26,8 @@ services:
     command: python collector_service.py
     depends_on:
       - redis_db
-    environment:
-      - REDIS_HOST=redis_db
+    env_file:
+      - .env
 
   # Alarm bloğu
   weather_alarm:
@@ -37,8 +36,8 @@ services:
       dockerfile: Dockerfile.alarm
     depends_on:
       - redis_db
-    environment:
-      - REDIS_HOST=redis_db
+    env_file:
+      - .env
 
   # 3. API
   weather_api:
@@ -51,6 +50,4 @@ services:
       - redis_db
     env_file:
       - .env
-    environment:
-      - REDIS_HOST=redis_db
 
