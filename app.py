@@ -4,6 +4,7 @@ import json
 import logging
 from flask import Flask, jsonify, request
 from dotenv import load_dotenv
+from flasgger import Swagger
 
 # .env yapılandırması
 load_dotenv()
@@ -15,6 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
 # Redis bağlantı bilgileri
 REDIS_HOST = os.getenv("REDIS_HOST", "redis_db")
@@ -23,9 +25,23 @@ REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 # Redis bağlantısının kurulumu
 cache = redis.Redis(host=REDIS_HOST, port=int(REDIS_PORT), decode_responses=True)
 
-
 @app.route('/weather/<city>', methods=['GET'])
 def get_weather(city):
+    """
+        Hava Durumu Verisini Getir
+        ---
+        parameters:
+          - name: city
+            in: path
+            type: string
+            required: true
+            description: Hava durumu sorgulanacak şehir adı (örn. adana)
+        responses:
+          200:
+            description: Şehir verisi başarıyla getirildi
+          404:
+            description: Şehir verisi Redis'te bulunamadı
+        """
     # Redis anahtarının oluşturulması
     cache_key = f"weather:hourly:{city.lower()}"
 
@@ -41,6 +57,27 @@ def get_weather(city):
 
 @app.route('/threshold', methods=['POST'])
 def set_threshold():
+    """
+        Sıcaklık Eşik Değeri Belirle
+        ---
+        parameters:
+          - name: body
+            in: body
+            required: true
+            schema:
+              id: Threshold
+              required:
+                - value
+              properties:
+                value:
+                  type: number
+                  description: Alarm verilmesini istediğiniz sıcaklık derecesi
+        responses:
+          200:
+            description: Eşik değeri başarıyla güncellendi
+          400:
+            description: Hatalı JSON formatı
+        """
     try:
         # Kullanıcıdan veriyi alıyoruz
         data = request.get_json()
