@@ -58,23 +58,28 @@ def get_weather(city):
 @app.route('/threshold', methods=['POST'])
 def set_threshold():
     """
-        Sıcaklık Eşik Değeri Belirle
+        Sıcaklık Eşik Değeri ve Bildirim Kanalı Belirle
         ---
         parameters:
           - name: body
             in: body
             required: true
             schema:
-              id: Threshold
+              id: Config
               required:
                 - value
+                - channel
               properties:
                 value:
                   type: number
                   description: Alarm verilmesini istediğiniz sıcaklık derecesi
+                channel:
+                  type: string
+                  enum: ['email', 'push']
+                  description: Bildirim gönderilecek kanal
         responses:
           200:
-            description: Eşik değeri başarıyla güncellendi
+            description: Ayarlar başarıyla güncellendi
           400:
             description: Hatalı JSON formatı
         """
@@ -82,25 +87,30 @@ def set_threshold():
         # Kullanıcıdan veriyi alıyoruz
         data = request.get_json()
 
-        if not data or 'value' not in data:
-            return jsonify({"status": "error", "message": "Lütfen 'value' içeren bir JSON gönderin."}), 400
+        if not data or 'value' not in data or 'channel' not in data:
+            return jsonify({"status": "error", "message": "Lütfen 'value' ve 'channel' içeren bir JSON gönderin."}), 400
 
         threshold_value = data['value']
+        channel_preference = data['channel']
 
         # Verinin sayı olduğundan emin oluyoruz
         if not isinstance(threshold_value, (int, float)):
             return jsonify({"status": "error", "message": "Değer bir sayı olmalıdır."}), 400
 
         # Redis'e kaydediyoruz
-        cache.set("weather_threshold", threshold_value)
+        config_data = {
+            "threshold": threshold_value,
+            "channel": channel_preference
+        }
+        cache.set("weather_config", json.dumps(config_data))
 
-        logger.info(f"Yeni threshold değeri ayarlandı: {threshold_value}")
+        logger.info(f"Yeni yapılandırma ayarlandı: {config_data}")
         return jsonify({
             "status": "success",
-            "message": f"Threshold {threshold_value} olarak güncellendi."
+            "message": f"Threshold {threshold_value} ve Kanal {channel_preference} olarak güncellendi."
         }), 200
     except Exception as e:
-        logger.error(f"Threshold kaydedilirken hata: {e}")
+        logger.error(f"Ayarlar kaydedilirken hata: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
