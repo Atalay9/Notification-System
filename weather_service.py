@@ -8,17 +8,16 @@ import json
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# API Key doğrudan yazılmıyor, Environment Variables'dan geliyor
-API_KEY = os.getenv("WEATHER_API_KEY")
-BASE_URL = os.getenv("WEATHER_API_URL", "http://api.weatherapi.com/v1/current.json")
-CITY = "Adana"
-
 # 3. Redis Bağlantısı
 # Docker için host olarak 'redis_db' ismini kullanıyoruz
 REDIS_HOST = os.getenv("REDIS_HOST", "redis_db")
 r = redis.Redis(host=REDIS_HOST, port=6379, decode_responses=True)
 
 def get_weather():
+    API_KEY = os.getenv("WEATHER_API_KEY")
+    BASE_URL = os.getenv("WEATHER_API_URL")
+    CITY = os.getenv("WEATHER_CITY", "Adana")
+
     if not API_KEY:
         logger.error("API_KEY bulunamadı!")
         return
