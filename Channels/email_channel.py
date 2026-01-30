@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 class EmailChannel(AlarmChannel):
     def __init__(self):
         self.api_key = os.getenv("MAILGUN_API_KEY")
+        self.api_url = os.getenv("MAILGUN_API_URL")
         self.domain = os.getenv("MAILGUN_DOMAIN")
         self.receiver = os.getenv("EMAIL_RECEIVER")
 
@@ -17,11 +18,9 @@ class EmailChannel(AlarmChannel):
             logger.error("Email gönderimi için gerekli çevre değişkenleri eksik!")
             return False
 
-        url = f"https://api.mailgun.net/v3/{self.domain}/messages"
-
         try:
             response = requests.post(
-                url,
+                self.api.url,
                 auth=("api", self.api_key),
                 data={
                     "from": f"Weather Alert System <mailgun@{self.domain}>",

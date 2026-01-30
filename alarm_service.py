@@ -17,7 +17,7 @@ def send_email_notification(city, temp, threshold):
     api_key = os.getenv("MAILGUN_API_KEY")
     domain = os.getenv("MAILGUN_DOMAIN")
     receiver_email = os.getenv("EMAIL_RECEIVER")
-    url = f"https://api.mailgun.net/v3/{domain}/messages"
+    url =  os.getenv("MAILGUN_API_URL")
     logger.info(f"İstek atılan URL: {url}")
 
     if domain is None:
